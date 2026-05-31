@@ -13,6 +13,8 @@ import { notesRouter } from "./features/notes/notes.routes.js";
 import { mistakesRouter } from "./features/mistakes/mistakes.routes.js";
 import { revisionsRouter } from "./features/revisions/revisions.routes.js";
 import { statsRouter } from "./features/stats/stats.routes.js";
+import { aiRouter } from "./features/ai/ai.routes.js";
+import { leetcodeImportRouter } from "./features/import/leetcode.routes.js";
 import { initFirebase } from "./lib/firebase.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import { seedPlatforms } from "./features/platforms/platforms.service.js";
@@ -56,6 +58,8 @@ export function createApp(): express.Application {
   v1.use("/mistakes", mistakesRouter);
   v1.use("/revisions", revisionsRouter);
   v1.use("/stats", statsRouter);
+  v1.use("/ai", aiRouter);
+  v1.use("/import/leetcode", leetcodeImportRouter);
 
   app.use("/api/v1", v1);
 

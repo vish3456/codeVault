@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { signInWithGithub, signInWithGoogle } from "@/features/auth/lib/auth-actions";
+import { apiClient } from "@/lib/api-client";
 
 export function LoginForm() {
   const { user, configured, loading: authLoading } = useAuth();
@@ -27,9 +28,19 @@ export function LoginForm() {
   const [pending, setPending] = useState<"google" | "github" | null>(null);
 
   useEffect(() => {
-    if (user) {
-      router.push("/dashboard");
-    }
+    if (!user) return;
+
+    void apiClient<{ status: { connected: boolean } }>("/import/leetcode/status")
+      .then((response) => {
+        if (!response.status.connected) {
+          router.push("/onboarding/leetcode");
+        } else {
+          router.push("/dashboard/leetcode");
+        }
+      })
+      .catch(() => {
+        router.push("/onboarding/leetcode");
+      });
   }, [user, router]);
 
   async function handleOAuth(provider: "google" | "github") {

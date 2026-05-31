@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +16,14 @@ import {
   ExternalLink,
   CalendarClock,
   Trash2,
+  BrainCircuit,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  CheckCircle2,
+  Lock,
 } from "lucide-react";
+import type { ProblemHintResponse } from "@/features/ai";
 
 interface ProblemDetail {
   id: string;
@@ -53,6 +61,19 @@ export default function ProblemDetailPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const problemId = params["id"] as string;
+
+  const [showHints, setShowHints] = useState(false);
+  const [unlockedLevel, setUnlockedLevel] = useState(0);
+
+  const { data: hintsData, isLoading: isHintsLoading } = useQuery({
+    queryKey: ["ai", "problems", "hints", problemId],
+    queryFn: () =>
+      apiClient<{ hints: ProblemHintResponse }>(`/ai/problems/${problemId}/hints`).then(
+        (r) => r.hints,
+      ),
+    enabled: showHints,
+    retry: false,
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["problems", problemId],
@@ -213,6 +234,168 @@ export default function ProblemDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* 💡 AI Coach Progressive Hints Collapsible Card */}
+      <Card className="border-violet-500/20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.01] to-indigo-500/[0.01] pointer-events-none" />
+        <CardHeader
+          className="flex flex-row items-center justify-between cursor-pointer py-4 hover:bg-muted/10 transition-colors"
+          onClick={() => setShowHints(!showHints)}
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded bg-violet-500/10 text-violet-500">
+              <BrainCircuit className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-bold">AI Coach Progressive Hints</CardTitle>
+              <CardDescription className="text-xs">
+                Unlock high-level observation to code blueprint, without solution spoiling.
+              </CardDescription>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            {showHints ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </CardHeader>
+
+        {showHints && (
+          <CardContent className="border-t p-5 space-y-4">
+            {isHintsLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : !hintsData ? (
+              <div className="py-4 text-center text-xs text-muted-foreground">
+                <Sparkles className="inline-block mr-1 h-3.5 w-3.5 text-violet-500 animate-pulse" />
+                Initializing hints engine...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* HINT 1: OBSERVATION */}
+                <div className="rounded-lg border p-4 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-violet-500">LEVEL 1: HIGH-LEVEL OBSERVATION</span>
+                    {unlockedLevel >= 1 ? (
+                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px]">UNLOCKED</Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px]">LOCKED</Badge>
+                    )}
+                  </div>
+
+                  {unlockedLevel >= 1 ? (
+                    <p className="mt-2 text-xs text-foreground leading-relaxed whitespace-pre-wrap">{hintsData.hints.observation}</p>
+                  ) : (
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-[11px] text-muted-foreground">Stuck on where to begin? Get a conceptual observation nudge.</p>
+                      <Button
+                        size="sm"
+                        className="bg-violet-600 hover:bg-violet-500 text-white text-[11px] h-7 px-3"
+                        onClick={() => setUnlockedLevel(1)}
+                      >
+                        <Lock className="mr-1 h-3 w-3" /> Reveal Observation
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* HINT 2: STRATEGY */}
+                <div className="rounded-lg border p-4 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-violet-500">LEVEL 2: ALGORITHMIC STRATEGY</span>
+                    {unlockedLevel >= 2 ? (
+                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px]">UNLOCKED</Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px]">LOCKED</Badge>
+                    )}
+                  </div>
+
+                  {unlockedLevel >= 2 ? (
+                    <p className="mt-2 text-xs text-foreground leading-relaxed whitespace-pre-wrap">{hintsData.hints.strategy}</p>
+                  ) : (
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-[11px] text-muted-foreground">What standard algorithms or models apply here? Let&apos;s check.</p>
+                      <Button
+                        size="sm"
+                        className="bg-violet-600 hover:bg-violet-500 text-white text-[11px] h-7 px-3"
+                        disabled={unlockedLevel < 1}
+                        onClick={() => setUnlockedLevel(2)}
+                      >
+                        <Lock className="mr-1 h-3 w-3" /> Reveal Strategy
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* HINT 3: CODE BLUEPRINT / TEMPLATE */}
+                <div className="rounded-lg border p-4 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-violet-500">LEVEL 3: PSEUDOCODE BLUEPRINT</span>
+                    {unlockedLevel >= 3 ? (
+                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px]">UNLOCKED</Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px]">LOCKED</Badge>
+                    )}
+                  </div>
+
+                  {unlockedLevel >= 3 ? (
+                    <div className="mt-3">
+                      <p className="text-[11px] text-muted-foreground mb-2">Use this structured structural design to implement the algorithm:</p>
+                      <pre className="rounded bg-muted/60 p-3 font-mono text-[10.5px] leading-relaxed overflow-x-auto border text-foreground">
+                        <code>{hintsData.hints.blueprint}</code>
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-[11px] text-muted-foreground">Need support structuring the actual loop conditions and collections?</p>
+                      <Button
+                        size="sm"
+                        className="bg-violet-600 hover:bg-violet-500 text-white text-[11px] h-7 px-3"
+                        disabled={unlockedLevel < 2}
+                        onClick={() => setUnlockedLevel(3)}
+                      >
+                        <Lock className="mr-1 h-3 w-3" /> Reveal Blueprint
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* COMMON PITFALLS (Unlocks when at least 1 hint is revealed) */}
+                {unlockedLevel >= 1 && hintsData.pitfalls && hintsData.pitfalls.length > 0 && (
+                  <div className="rounded-lg border bg-yellow-500/[0.02] border-yellow-500/10 p-4 transition-all">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="h-4 w-4 text-yellow-500" />
+                      <span className="text-xs font-bold text-yellow-600">COMMON TRAPS & PITFALLS</span>
+                    </div>
+                    <ul className="mt-2.5 space-y-1.5 text-xs text-foreground">
+                      {hintsData.pitfalls.map((pitfall: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-1.5">
+                          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-yellow-500" />
+                          <span>{pitfall}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Reset button */}
+                {unlockedLevel > 0 && (
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-[11px] h-7 text-muted-foreground hover:text-foreground"
+                      onClick={() => setUnlockedLevel(0)}
+                    >
+                      Hide & Lock All Hints
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
 
       <Separator />
 

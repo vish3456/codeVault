@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Sparkles,
   Tags,
+  Code2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -22,6 +23,7 @@ const navItems = [
   { label: "Mistakes", href: "/dashboard/mistakes", icon: AlertTriangle },
   { label: "Revision", href: "/dashboard/revision", icon: CalendarClock },
   { label: "Tags", href: "/dashboard/tags", icon: Tags },
+  { label: "LeetCode", href: "/dashboard/leetcode", icon: Code2 },
 ] as const;
 
 const secondaryItems = [

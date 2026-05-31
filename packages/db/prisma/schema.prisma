@@ -51,13 +51,15 @@ enum MistakeCategory {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  firebaseUid String   @unique @map("firebase_uid")
-  email       String?
-  name        String?
-  avatarUrl   String?  @map("avatar_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(cuid())
+  firebaseUid      String    @unique @map("firebase_uid")
+  email            String?
+  name             String?
+  avatarUrl        String?   @map("avatar_url")
+  leetcodeUsername String?   @map("leetcode_username")
+  leetcodeSyncedAt DateTime? @map("leetcode_synced_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   userProblems UserProblem[]
   tags         Tag[]
@@ -105,15 +107,18 @@ model Problem {
 }
 
 model UserProblem {
-  id        String        @id @default(cuid())
-  userId    String        @map("user_id")
-  problemId String        @map("problem_id")
-  solveDate DateTime      @map("solve_date")
-  language  SolveLanguage
-  attempts  Int           @default(1)
-  rating    Int
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  id              String        @id @default(cuid())
+  userId          String        @map("user_id")
+  problemId       String        @map("problem_id")
+  solveDate       DateTime      @map("solve_date")
+  language        SolveLanguage
+  attempts        Int           @default(1)
+  rating          Int
+  isDoubtful      Boolean       @default(false) @map("is_doubtful")
+  topicCluster    String?       @map("topic_cluster")
+  problemSummary  String?       @db.Text @map("problem_summary")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   problem  Problem   @relation(fields: [problemId], references: [id], onDelete: Cascade)
@@ -124,6 +129,8 @@ model UserProblem {
   @@index([problemId])
   @@index([solveDate])
   @@index([userId, solveDate])
+  @@index([userId, isDoubtful])
+  @@index([userId, topicCluster])
   @@map("user_problems")
 }
 

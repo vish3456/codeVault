@@ -24,6 +24,7 @@ const envSchema = z.object({
     z.string().url().optional(),
   ),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  GEMINI_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -53,6 +54,7 @@ export function loadEnv(): Env {
     ),
     REDIS_URL: process.env["REDIS_URL"],
     DATABASE_URL: process.env["DATABASE_URL"],
+    GEMINI_API_KEY: process.env["GEMINI_API_KEY"],
   };
 
   cachedEnv = envSchema.parse(raw);
