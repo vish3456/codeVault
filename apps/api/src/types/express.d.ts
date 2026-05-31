@@ -1,13 +1,15 @@
 // apps/api/src/types/express.d.ts
 
-import "express-serve-static-core";
+import "express";
 
-declare module "express-serve-static-core" {
-  interface Request {
-    validatedBody?: unknown;
-    validatedQuery?: unknown;
-    validatedParams?: unknown;
-    validatedHeaders?: unknown;
-    auth?: { userId: string };
+declare global {
+  namespace Express {
+    interface Request {
+      validatedBody?: any;
+      validatedQuery?: any;
+      validatedParams?: any;
+      validatedHeaders?: any;
+      auth?: { userId: string };
+    }
   }
 }

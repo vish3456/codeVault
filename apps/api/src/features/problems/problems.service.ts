@@ -1,6 +1,6 @@
 // apps/api/src/features/problems/problems.service.ts
 
-import type { Prisma } from "@prisma/client";
+import type { Prisma, UserProblem } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
 import { ok, err, type Result } from "../../lib/result.js";
 import type {
@@ -321,7 +321,7 @@ export async function updateProblem(
       if (body.rating !== undefined) userProblemUpdate.rating = body.rating;
       if (body.attempts !== undefined) userProblemUpdate.attempts = body.attempts;
 
-      let userProblem = null;
+      let userProblem: UserProblem | null = null;
       if (Object.keys(userProblemUpdate).length > 0) {
         userProblem = await tx.userProblem.update({
           where: { userId_problemId: { userId, problemId } },
