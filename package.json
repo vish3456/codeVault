@@ -1,0 +1,12 @@
+{
+  "name": "codevault",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "dev:api": "pnpm --filter @codevault/api dev",
+    "dev:web": "pnpm --filter @codevault/web dev",
+    "build": "pnpm -r build",
+    "build:web": "pnpm --filter @codevault/web build"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

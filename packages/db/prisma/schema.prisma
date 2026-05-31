@@ -1,0 +1,232 @@
+// packages/db/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SolveLanguage {
+  CPP
+  C
+  PYTHON
+  JAVA
+  JAVASCRIPT
+  TYPESCRIPT
+  GO
+  RUST
+  KOTLIN
+  OTHER
+}
+
+enum RevisionIntervalStage {
+  DAY_1
+  DAY_3
+  DAY_7
+  DAY_15
+  DAY_30
+}
+
+enum AIInsightType {
+  WEAKNESS_MAP
+  READINESS_SCORE
+  TOPIC_CLUSTERS
+}
+
+enum MistakeCategory {
+  LOGIC
+  SYNTAX
+  COMPLEXITY
+  EDGE_CASE
+  IMPLEMENTATION
+  OTHER
+}
+
+model User {
+  id          String   @id @default(cuid())
+  firebaseUid String   @unique @map("firebase_uid")
+  email       String?
+  name        String?
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userProblems UserProblem[]
+  tags         Tag[]
+  notes        Note[]
+  mistakes     Mistake[]
+  revisions    Revision[]
+  aiInsights   AIInsight[]
+
+  @@map("users")
+}
+
+model Platform {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  baseUrl   String?  @map("base_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  problems Problem[]
+
+  @@map("platforms")
+}
+
+model Problem {
+  id         String      @id @default(cuid())
+  platformId String      @map("platform_id")
+  externalId String      @map("external_id")
+  title      String
+  difficulty Difficulty?
+  url        String?
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+
+  platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  userProblems UserProblem[]
+  problemTags  ProblemTag[]
+  notes        Note[]
+  mistakes     Mistake[]
+  revisions    Revision[]
+
+  @@unique([platformId, externalId])
+  @@index([platformId])
+  @@index([difficulty])
+  @@map("problems")
+}
+
+model UserProblem {
+  id        String        @id @default(cuid())
+  userId    String        @map("user_id")
+  problemId String        @map("problem_id")
+  solveDate DateTime      @map("solve_date")
+  language  SolveLanguage
+  attempts  Int           @default(1)
+  rating    Int
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem  Problem   @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  mistakes Mistake[]
+
+  @@unique([userId, problemId])
+  @@index([userId])
+  @@index([problemId])
+  @@index([solveDate])
+  @@index([userId, solveDate])
+  @@map("user_problems")
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  slug      String
+  color     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemTags ProblemTag[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@map("tags")
+}
+
+model ProblemTag {
+  problemId String @map("problem_id")
+  tagId     String @map("tag_id")
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, tagId])
+  @@index([tagId])
+  @@map("problem_tags")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  problemId String?  @map("problem_id")
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem   Problem?   @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  revisions Revision[]
+
+  @@index([userId])
+  @@index([problemId])
+  @@index([userId, createdAt])
+  @@map("notes")
+}
+
+model Mistake {
+  id            String          @id @default(cuid())
+  userId        String          @map("user_id")
+  problemId     String?         @map("problem_id")
+  userProblemId String?         @map("user_problem_id")
+  description   String          @db.Text
+  category      MistakeCategory @default(OTHER)
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem     Problem?     @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  userProblem UserProblem? @relation(fields: [userProblemId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([problemId])
+  @@index([userProblemId])
+  @@map("mistakes")
+}
+
+model Revision {
+  id             String                @id @default(cuid())
+  userId         String                @map("user_id")
+  problemId      String?               @map("problem_id")
+  noteId         String?               @map("note_id")
+  nextReviewAt   DateTime              @map("next_review_at")
+  intervalStage  RevisionIntervalStage @default(DAY_1) @map("interval_stage")
+  lastReviewedAt DateTime?             @map("last_reviewed_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem? @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  note    Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, nextReviewAt])
+  @@index([problemId])
+  @@index([noteId])
+  @@map("revisions")
+}
+
+model AIInsight {
+  id         String        @id @default(cuid())
+  userId     String        @map("user_id")
+  type       AIInsightType
+  rawJson    Json          @map("raw_json")
+  parsedJson Json          @map("parsed_json")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("ai_insights")
+}
