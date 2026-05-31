@@ -26,9 +26,20 @@ export function createApp(): express.Application {
 
   const app = express();
 
+  const allowedOrigins = env.CORS_ORIGIN.split(",").map((o) => o.trim());
+
   app.use(
     cors({
-      origin: env.CORS_ORIGIN,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+          return callback(null, true);
+        }
+        if (origin.endsWith(".vercel.app")) {
+          return callback(null, true);
+        }
+        return callback(new Error(`CORS policy blocked request from ${origin}`));
+      },
       credentials: true,
     }),
   );
