@@ -8,5 +8,8 @@
     "build": "pnpm -r build",
     "build:web": "pnpm --filter @codevault/web build"
   },
+  "engines": {
+    "node": "20.x"
+  },
   "packageManager": "pnpm@9.15.0"
 }
